@@ -250,4 +250,13 @@ async def nom(ctx, members: Greedy[discord.Member]):
     
     await command_processing(ctx, members, 'nom')
 
+@client.command()
+async def yiff(ctx):
+    
+    await ctx.message.delete()
+
+    image = discord_file('./bot/nohorny.jpg', 'nohorny.jpg')
+
+    await ctx.send(file=image)
+    
 client.run(os.getenv('TOKEN'))
