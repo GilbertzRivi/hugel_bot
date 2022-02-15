@@ -29,6 +29,7 @@ def get_image(folder: str) -> discord.File:
 
 async def command_processing(ctx, members: list, type: str) -> None:
 
+    #creating variables
     if type == 'hug':
         self_response = 'przytulić'
         doesnt_like = 'tulano'
@@ -72,11 +73,13 @@ async def command_processing(ctx, members: list, type: str) -> None:
         embed_text = 'noma'
         folder = './bot/noms'
 
+    #checking if person is not huging themself
     if ctx.author in members:
-        image_file = discord_file("beyond science.png", "beyond science.png")
+        image_file = discord_file(".bot/beyond science.png", ".bot/beyond science.png")
         await ctx.send(f"Ej <@{ctx.author.id}>\nNie mozesz {self_response} samego siebie <:thonk:531349115041480715>", file=image_file)
         return False
 
+    #removing people that doesn't like hugs from members list
     for member in members:
         for role in member.roles:
             if role in client.doesnt_like_roles:
@@ -86,6 +89,37 @@ async def command_processing(ctx, members: list, type: str) -> None:
         await ctx.send(f'Niestety ta osoba nie życzy sobie aby ją {doesnt_like} :/')
         return False
 
+    #editing message instead of posting a new one if hug/pat etc is an responce
+    async for message in ctx.channel.history(limit=50):
+        if message.author == client.user and len(message.embeds) > 0:
+            
+            embed = message.embeds[0]
+            if embed_text in embed.fields[0].value.split(' '):
+            
+                temp_members = []
+                for elem in embed.fields[0].value.split(' '):
+                    
+                    #extracting members from embed
+                    try:
+                        temp_members.append(ctx.message.guild.get_member(int(elem[2:-1])))
+                    except ValueError:
+                        try:
+                            temp_members.append(ctx.message.guild.get_member(int(elem[3:-1])))
+                        except: pass
+
+                #editing embed
+                if len(temp_members) == 2:
+                    image = get_image(folder)
+                    temp = await client.url_conv_channel.send(file=image)
+                    image_url = temp.attachments[0].url
+
+                    embed.set_image(url=image_url)
+                    embed.set_field_at(0, name = embed_name, value = f'{temp_members[0].mention} i {temp_members[1].mention} {footer_text} się nawzajem :3')
+                    await message.edit(embed=embed)
+                    return
+            break
+
+    #getting an image for hug
     image = get_image(folder)
     temp = await client.url_conv_channel.send(file=image)
     image_url = temp.attachments[0].url
@@ -99,22 +133,24 @@ async def command_processing(ctx, members: list, type: str) -> None:
     
     embed.set_image(url=image_url)
     
-
+    #setting up embed with proper text
     if client.user.id in [member.id for member in members]:
         if len(members) == 1:
             embed.add_field(name=embed_name, value=f'{ctx.author.mention} mnie {embed_text} >w<\nDziekuje!')
         else:
             members.remove(client.user)
-            mentions = ', '.join([member.mention for member in members])
+            mentions = ' '.join([member.mention for member in members])
             embed.add_field(name=embed_name, value=f"{ctx.author.mention} {embed_text} {mentions} i mnie >w<\nDziekuje!")
     else:
-        mentions = ', '.join([member.mention for member in members])
+        mentions = ' '.join([member.mention for member in members])
         comment = random.choice(responces)
         embed.add_field(name=embed_name, value=f"{ctx.author.mention} {embed_text} {mentions} {comment}")
 
+    #sending message and adding reaction
     msg = await ctx.send(embed=embed)
     await msg.add_reaction(emoji='➡️')
     
+    #deleting old messages
     temp = 0
     async for message in ctx.channel.history(limit=50):
         if message.author == client.user and len(message.embeds) == 1:
@@ -258,5 +294,5 @@ async def yiff(ctx):
     image = discord_file('./bot/nohorny.jpg', 'nohorny.jpg')
 
     await ctx.send(file=image)
-    
+
 client.run(os.getenv('TOKEN'))
